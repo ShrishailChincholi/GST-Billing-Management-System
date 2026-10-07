@@ -1,0 +1,9 @@
+/* Import order matters */
+@import './styles/variables.css';
+@import './styles/global.css';
+@import './styles/components.css';
+@import './styles/layout.css';
+@import './styles/auth.css';
+@import './styles/dashboard.css';
+@import './styles/tables.css';
+@import './styles/invoice.css';
