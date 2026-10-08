@@ -1,9 +1,17 @@
-/* Import order matters */
+/* 1. Variables */
 @import './styles/variables.css';
+
+/* 2. Global reset + utilities */
 @import './styles/global.css';
+
+/* 3. Components */
 @import './styles/components.css';
+
+/* 4. Layout */
 @import './styles/layout.css';
+
+/* 5. Page-specific */
 @import './styles/auth.css';
 @import './styles/dashboard.css';
 @import './styles/tables.css';
-@import './styles/invoice.css';
+@import './styles/invoice.css';      
