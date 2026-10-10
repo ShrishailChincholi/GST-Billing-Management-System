@@ -94,13 +94,13 @@ const invoiceSchema = new mongoose.Schema(
 );
 
 // Generate invoice number before saving
-invoiceSchema.pre('save', async function (next) {
+
+invoiceSchema.pre('save', async function () {
   if (!this.invoiceNumber) {
     const year = new Date().getFullYear();
     const count = await mongoose.model('Invoice').countDocuments();
     this.invoiceNumber = `INV-${year}-${String(count + 1).padStart(5, '0')}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

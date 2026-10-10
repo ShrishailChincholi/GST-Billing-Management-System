@@ -35,7 +35,10 @@ const userSchema = new mongoose.Schema(
       required: [true, 'GSTIN is required'],
       uppercase: true,
       trim: true,
-      match: [/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Please provide a valid GSTIN'],
+      match: [
+        /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+        'Please provide a valid GSTIN',
+      ],
     },
     address: {
       street: String,
@@ -59,12 +62,11 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+// Hash password before saving (Mongoose v8 - no next callback)
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // Compare password method

@@ -1,125 +1,117 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import api, { authAPI, tokenStorage, getErrorMessage } from '../services/api';
+import axios from 'axios';
 
-const AuthContext = createContext();
+// ============================================================
+// Axios Instance Configuration
+// ============================================================
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || '/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  },
+});
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+// ============================================================
+// Token Storage Helpers
+// ============================================================
+export const tokenStorage = {
+  get: () => localStorage.getItem('token'),
+  set: (token) => localStorage.setItem('token', token),
+  remove: () => localStorage.removeItem('token'),
+};
+
+// ============================================================
+// Request Interceptor
+// ============================================================
+api.interceptors.request.use(
+  (config) => {
+    const token = tokenStorage.get();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ============================================================
+// Response Interceptor
+// ============================================================
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      tokenStorage.remove();
+      delete api.defaults.headers.common['Authorization'];
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
   }
-  return context;
+);
+
+// ============================================================
+// Error Message Helper
+// ============================================================
+export const getErrorMessage = (error) => {
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.response?.data?.errors?.length) return error.response.data.errors[0];
+  if (error.message === 'Network Error') return 'Network error. Please check your connection.';
+  if (error.code === 'ECONNABORTED') return 'Request timeout. Please try again.';
+  return error.message || 'Something went wrong. Please try again.';
 };
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // ===== Check for existing token on mount =====
-  useEffect(() => {
-    const initAuth = async () => {
-      const token = tokenStorage.get();
-
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      // Set default Authorization header
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      try {
-        const { data } = await authAPI.getMe();
-        setUser(data.data);
-      } catch (error) {
-        // Token invalid or expired
-        tokenStorage.remove();
-        delete api.defaults.headers.common['Authorization'];
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // ===== Login =====
-  const login = async (email, password) => {
-    try {
-      const { data } = await authAPI.login({ email, password });
-
-      const { token, ...userData } = data.data;
-
-      tokenStorage.set(token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(userData);
-
-      toast.success(`Welcome back, ${userData.name}!`);
-      return { success: true };
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message);
-      return { success: false, error: message };
-    }
-  };
-
-  // ===== Register =====
-  const register = async (userData) => {
-    try {
-      const { data } = await authAPI.register(userData);
-
-      const { token, ...user } = data.data;
-
-      tokenStorage.set(token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-
-      toast.success('Account created successfully!');
-      return { success: true };
-    } catch (error) {
-      const message = getErrorMessage(error);
-      toast.error(message);
-      return { success: false, error: message };
-    }
-  };
-
-  // ===== Logout =====
-  const logout = () => {
-    tokenStorage.remove();
-    delete api.defaults.headers.common['Authorization'];
-    setUser(null);
-    toast.success('Logged out successfully');
-  };
-
-  // ===== Update User =====
-  const updateUser = (updatedData) => {
-    setUser((prev) => ({ ...prev, ...updatedData }));
-  };
-
-  // ===== Refresh User =====
-  const refreshUser = async () => {
-    try {
-      const { data } = await authAPI.getMe();
-      setUser(data.data);
-      return data.data;
-    } catch (error) {
-      console.error('Failed to refresh user:', error);
-      return null;
-    }
-  };
-
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    updateUser,
-    refreshUser,
-    isAuthenticated: !!user,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+// ============================================================
+// API Endpoint Helpers
+// ============================================================
+export const authAPI = {
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  getMe: () => api.get('/auth/me'),
+  updateProfile: (data) => api.put('/auth/me', data),
 };
+
+export const clientAPI = {
+  getAll: (params) => api.get('/clients', { params }),
+  getOne: (id) => api.get(`/clients/${id}`),
+  create: (data) => api.post('/clients', data),
+  update: (id, data) => api.put(`/clients/${id}`, data),
+  delete: (id) => api.delete(`/clients/${id}`),
+  getInvoices: (id) => api.get(`/clients/${id}/invoices`),
+};
+
+export const productAPI = {
+  getAll: (params) => api.get('/products', { params }),
+  getOne: (id) => api.get(`/products/${id}`),
+  create: (data) => api.post('/products', data),
+  update: (id, data) => api.put(`/products/${id}`, data),
+  delete: (id) => api.delete(`/products/${id}`),
+  updateStock: (id, data) => api.patch(`/products/${id}/stock`, data),
+  getLowStock: (threshold) => api.get('/products/low-stock', { params: { threshold } }),
+};
+
+export const invoiceAPI = {
+  getAll: (params) => api.get('/invoices', { params }),
+  getOne: (id) => api.get(`/invoices/${id}`),
+  create: (data) => api.post('/invoices', data),
+  update: (id, data) => api.put(`/invoices/${id}`, data),
+  delete: (id) => api.delete(`/invoices/${id}`),
+  issue: (id) => api.post(`/invoices/${id}/issue`),
+  cancel: (id) => api.post(`/invoices/${id}/cancel`),
+  recordPayment: (id, data) => api.post(`/invoices/${id}/payment`, data),
+};
+
+export const reportAPI = {
+  getDashboardStats: () => api.get('/reports/dashboard-stats'),
+  getGSTR1: (params) => api.get('/reports/gstr1', { params }),
+  getGSTR3B: (params) => api.get('/reports/gstr3b', { params }),
+  getSalesSummary: (params) => api.get('/reports/sales-summary', { params }),
+  getTaxLiability: (params) => api.get('/reports/tax-liability', { params }),
+  getClientWiseSales: (params) => api.get('/reports/client-wise', { params }),
+};
+
+export const healthCheck = () => api.get('/health');
+
+export default api;
