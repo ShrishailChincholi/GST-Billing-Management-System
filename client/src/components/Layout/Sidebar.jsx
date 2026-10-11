@@ -3,13 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
-  FileText,
-  Users,
+  ShoppingCart,
+  History,
   Package,
-  BarChart3,
   Settings,
   LogOut,
-  PlusCircle,
+  Receipt,
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -18,11 +17,9 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/invoices', icon: FileText, label: 'Invoices' },
-    { path: '/create-invoice', icon: PlusCircle, label: 'Create Invoice' },
-    { path: '/clients', icon: Users, label: 'Clients' },
+    { path: '/new-bill', icon: ShoppingCart, label: 'New Bill' },
+    { path: '/sales', icon: History, label: 'Sales History' },
     { path: '/products', icon: Package, label: 'Products' },
-    { path: '/reports', icon: BarChart3, label: 'GST Reports' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 
@@ -33,27 +30,24 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">G</div>
           <div className="sidebar-logo-text">
-            <h1>GST IMS</h1>
-            <p>Invoice Management</p>
+            <h1>GST Billing</h1>
+            <p>Point of Sale</p>
           </div>
         </div>
       </div>
 
-      {/* Business Info */}
       <div className="sidebar-business">
-        <p className="sidebar-business-label">Business</p>
+        <p className="sidebar-business-label">Shop</p>
         <p className="sidebar-business-name" title={user?.businessName}>
           {user?.businessName}
         </p>
         <p className="sidebar-business-gstin">GSTIN: {user?.gstin}</p>
       </div>
 
-      {/* Navigation */}
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -69,7 +63,6 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Logout */}
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="sidebar-logout">
           <LogOut size={20} />

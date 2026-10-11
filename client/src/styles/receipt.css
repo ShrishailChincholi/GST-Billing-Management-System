@@ -1,0 +1,292 @@
+/* ============================================================
+   GST IMS - Receipt / Bill Preview Styles
+   For thermal-printer style (58mm/80mm) and A4 GST invoices
+   ============================================================ */
+
+.receipt-preview-wrapper {
+  background: var(--color-gray-100);
+  padding: var(--space-8);
+  min-height: calc(100vh - var(--header-height));
+  overflow-x: auto;
+}
+
+.receipt-preview {
+  background: var(--color-white);
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-gray-900);
+  line-height: 1.5;
+}
+
+/* For A4 GST bill */
+.receipt-preview.a4 {
+  max-width: 800px;
+  padding: 40px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+/* ===== Receipt Header ===== */
+.receipt-header {
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--color-gray-400);
+  margin-bottom: 12px;
+}
+
+.receipt-header.a4 {
+  text-align: left;
+  border-bottom: 3px solid var(--color-primary-600);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.receipt-company-name {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+}
+
+.receipt-preview.a4 .receipt-company-name {
+  font-size: 22px;
+  color: var(--color-primary-700);
+}
+
+.receipt-company-details {
+  font-size: 11px;
+  color: var(--color-gray-600);
+  line-height: 1.4;
+}
+
+.receipt-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 12px 0;
+  padding: 6px 0;
+  border-top: 1px dashed var(--color-gray-400);
+  border-bottom: 1px dashed var(--color-gray-400);
+}
+
+.receipt-preview.a4 .receipt-title {
+  border: none;
+  background: var(--color-primary-600);
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* ===== Receipt Meta ===== */
+.receipt-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.receipt-meta-right {
+  text-align: right;
+}
+
+/* ===== Receipt Items ===== */
+.receipt-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-bottom: 12px;
+}
+
+.receipt-preview.a4 .receipt-items-table {
+  font-size: 12px;
+}
+
+.receipt-items-table thead th {
+  border-top: 1px dashed var(--color-gray-400);
+  border-bottom: 1px dashed var(--color-gray-400);
+  padding: 6px 4px;
+  text-align: left;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.receipt-preview.a4 .receipt-items-table thead th {
+  background: var(--color-primary-600);
+  color: white;
+  border: none;
+  padding: 10px 8px;
+  font-size: 11px;
+  border-radius: 0;
+}
+
+.receipt-items-table thead th:first-child {
+  border-top-left-radius: var(--radius-md);
+}
+
+.receipt-items-table thead th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+.receipt-items-table thead th.right {
+  text-align: right;
+}
+
+.receipt-items-table tbody td {
+  padding: 5px 4px;
+  border-bottom: 1px dotted var(--color-gray-300);
+  vertical-align: top;
+}
+
+.receipt-preview.a4 .receipt-items-table tbody td {
+  padding: 8px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.receipt-items-table td.right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-items-table .item-name {
+  font-weight: 500;
+}
+
+.receipt-items-table .item-sub {
+  font-size: 10px;
+  color: var(--color-gray-500);
+}
+
+/* ===== Receipt Totals ===== */
+.receipt-totals {
+  border-top: 1px dashed var(--color-gray-400);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.receipt-preview.a4 .receipt-totals {
+  border-top: 2px solid var(--color-gray-300);
+  padding-top: 16px;
+  max-width: 320px;
+  margin-left: auto;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 11px;
+}
+
+.receipt-preview.a4 .receipt-total-row {
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.receipt-total-row.grand {
+  border-top: 1px dashed var(--color-gray-400);
+  margin-top: 6px;
+  padding-top: 6px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.receipt-preview.a4 .receipt-total-row.grand {
+  border-top: 2px solid var(--color-primary-600);
+  padding-top: 10px;
+  font-size: 20px;
+  color: var(--color-primary-600);
+}
+
+.receipt-total-row.grand span:last-child {
+  font-family: var(--font-mono);
+}
+
+/* ===== Receipt Footer ===== */
+.receipt-footer {
+  text-align: center;
+  border-top: 1px dashed var(--color-gray-400);
+  padding-top: 12px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--color-gray-600);
+}
+
+.receipt-footer-thanks {
+  font-weight: bold;
+  color: var(--color-gray-900);
+  margin-bottom: 4px;
+}
+
+.receipt-amount-words {
+  background: var(--color-gray-50);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* ===== Receipt Actions ===== */
+.receipt-actions {
+  max-width: 420px;
+  margin: 0 auto var(--space-6);
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.receipt-actions.a4 {
+  max-width: 800px;
+}
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+@media print {
+  @page {
+    size: auto;
+    margin: 5mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .receipt-preview,
+  .receipt-preview * {
+    visibility: visible;
+  }
+
+  .receipt-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .receipt-actions,
+  .header,
+  .sidebar {
+    display: none !important;
+  }
+
+  .receipt-preview.a4 {
+    max-width: 100%;
+    width: 100%;
+    padding: 0;
+  }
+}
