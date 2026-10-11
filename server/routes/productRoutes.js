@@ -7,15 +7,10 @@ const {
   updateProduct,
   deleteProduct,
   updateStock,
-  getLowStockProducts,
 } = require('../controllers/productController');
 const { protect } = require('../middleware/auth');
 
-// All routes require authentication
 router.use(protect);
-
-// Special routes (must come before /:id)
-router.get('/low-stock', getLowStockProducts);
 
 router.route('/').get(getProducts).post(createProduct);
 

@@ -23,12 +23,13 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'accountant', 'viewer'],
+      enum: ['admin', 'cashier'],
       default: 'admin',
     },
     businessName: {
       type: String,
       required: [true, 'Business name is required'],
+      trim: true,
     },
     gstin: {
       type: String,
@@ -41,23 +42,29 @@ const userSchema = new mongoose.Schema(
       ],
     },
     address: {
-      street: String,
-      city: String,
-      state: String,
-      stateCode: String,
-      pincode: String,
+      street: { type: String, default: '' },
+      city: { type: String, default: '' },
+      state: { type: String, default: '' },
+      stateCode: { type: String, default: '' },
+      pincode: { type: String, default: '' },
       country: { type: String, default: 'India' },
     },
-    phone: String,
+    phone: {
+      type: String,
+      default: '',
+    },
     bankDetails: {
-      accountName: String,
-      accountNumber: String,
-      bankName: String,
-      ifscCode: String,
-      branch: String,
+      accountName: { type: String, default: '' },
+      accountNumber: { type: String, default: '' },
+      bankName: { type: String, default: '' },
+      ifscCode: { type: String, default: '' },
+      branch: { type: String, default: '' },
+    },
+    billFooterNote: {
+      type: String,
+      default: 'Thank you! Visit again',
     },
     logo: String,
-    signature: String,
   },
   { timestamps: true }
 );

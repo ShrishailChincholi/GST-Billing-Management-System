@@ -1,23 +1,25 @@
 /**
- * GST Calculator - Core logic for Indian GST calculation
- * Handles CGST/SGST (intra-state) and IGST (inter-state) automatically
+ * GST Calculator
+ * Handles intra-state (CGST+SGST) and inter-state (IGST) automatically
  */
 
-const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28];
-
-/**
- * Determine if transaction is inter-state based on state codes
- */
 const isInterState = (supplierStateCode, recipientStateCode) => {
+  if (!supplierStateCode || !recipientStateCode) return false;
   return supplierStateCode !== recipientStateCode;
 };
 
 /**
  * Calculate GST for a single line item
  */
-const calculateLineItemGST = (item, supplierStateCode, recipientStateCode) => {
-  const taxableAmount = item.quantity * item.rate - (item.discount || 0);
-  const gstRate = item.gstRate;
+const calculateLineItemGST = (
+  item,
+  supplierStateCode,
+  recipientStateCode
+) => {
+  const lineGross = item.quantity * item.rate;
+  const discount = item.discount || 0;
+  const taxableAmount = lineGross - discount;
+  const gstRate = item.gstRate || 0;
   const cessRate = item.cessRate || 0;
 
   const totalGST = (taxableAmount * gstRate) / 100;
@@ -59,9 +61,9 @@ const calculateLineItemGST = (item, supplierStateCode, recipientStateCode) => {
 };
 
 /**
- * Calculate full invoice totals
+ * Calculate full sale/bill totals
  */
-const calculateInvoiceTotals = (items, supplierStateCode, recipientStateCode) => {
+const calculateBillTotals = (items, supplierStateCode, recipientStateCode) => {
   const processedItems = items.map((item) =>
     calculateLineItemGST(item, supplierStateCode, recipientStateCode)
   );
@@ -78,13 +80,31 @@ const calculateInvoiceTotals = (items, supplierStateCode, recipientStateCode) =>
     (sum, item) => sum + item.taxableAmount,
     0
   );
-  const totalCGST = processedItems.reduce((sum, item) => sum + item.cgstAmount, 0);
-  const totalSGST = processedItems.reduce((sum, item) => sum + item.sgstAmount, 0);
-  const totalIGST = processedItems.reduce((sum, item) => sum + item.igstAmount, 0);
-  const totalCess = processedItems.reduce((sum, item) => sum + item.cessAmount, 0);
+  const totalCGST = processedItems.reduce(
+    (sum, item) => sum + item.cgstAmount,
+    0
+  );
+  const totalSGST = processedItems.reduce(
+    (sum, item) => sum + item.sgstAmount,
+    0
+  );
+  const totalIGST = processedItems.reduce(
+    (sum, item) => sum + item.igstAmount,
+    0
+  );
+  const totalCess = processedItems.reduce(
+    (sum, item) => sum + item.cessAmount,
+    0
+  );
 
   const grandTotal = parseFloat(
-    (totalTaxableAmount + totalCGST + totalSGST + totalIGST + totalCess).toFixed(2)
+    (
+      totalTaxableAmount +
+      totalCGST +
+      totalSGST +
+      totalIGST +
+      totalCess
+    ).toFixed(2)
   );
 
   const roundedTotal = Math.round(grandTotal);
@@ -99,13 +119,14 @@ const calculateInvoiceTotals = (items, supplierStateCode, recipientStateCode) =>
     totalSGST: parseFloat(totalSGST.toFixed(2)),
     totalIGST: parseFloat(totalIGST.toFixed(2)),
     totalCess: parseFloat(totalCess.toFixed(2)),
+    totalTax: parseFloat((totalCGST + totalSGST + totalIGST + totalCess).toFixed(2)),
     roundOff,
     grandTotal: roundedTotal,
   };
 };
 
 /**
- * Convert number to Indian words (for invoice amount in words)
+ * Convert number to Indian words (Rupees and Paise)
  */
 const numberToWords = (num) => {
   const ones = [
@@ -114,7 +135,8 @@ const numberToWords = (num) => {
     'Seventeen', 'Eighteen', 'Nineteen',
   ];
   const tens = [
-    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
+    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy',
+    'Eighty', 'Ninety',
   ];
 
   const numToWords = (n) => {
@@ -122,30 +144,43 @@ const numberToWords = (num) => {
     if (n < 100)
       return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
     if (n < 1000)
-      return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + numToWords(n % 100) : '');
+      return (
+        ones[Math.floor(n / 100)] +
+        ' Hundred' +
+        (n % 100 ? ' ' + numToWords(n % 100) : '')
+      );
     if (n < 100000)
-      return numToWords(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 ? ' ' + numToWords(n % 1000) : '');
+      return (
+        numToWords(Math.floor(n / 1000)) +
+        ' Thousand' +
+        (n % 1000 ? ' ' + numToWords(n % 1000) : '')
+      );
     if (n < 10000000)
-      return numToWords(Math.floor(n / 100000)) + ' Lakh' + (n % 100000 ? ' ' + numToWords(n % 100000) : '');
-    return numToWords(Math.floor(n / 10000000)) + ' Crore' + (n % 10000000 ? ' ' + numToWords(n % 10000000) : '');
+      return (
+        numToWords(Math.floor(n / 100000)) +
+        ' Lakh' +
+        (n % 100000 ? ' ' + numToWords(n % 100000) : '')
+      );
+    return (
+      numToWords(Math.floor(n / 10000000)) +
+      ' Crore' +
+      (n % 10000000 ? ' ' + numToWords(n % 10000000) : '')
+    );
   };
 
-  const rupees = Math.floor(num);
-  const paise = Math.round((num - rupees) * 100);
+  const rupees = Math.floor(Math.abs(num));
+  const paise = Math.round((Math.abs(num) - rupees) * 100);
 
   let words = numToWords(rupees) + ' Rupees';
-  if (paise > 0) {
-    words += ' and ' + numToWords(paise) + ' Paise';
-  }
+  if (paise > 0) words += ' and ' + numToWords(paise) + ' Paise';
   words += ' Only';
 
   return words;
 };
 
 module.exports = {
-  GST_RATES,
   isInterState,
   calculateLineItemGST,
-  calculateInvoiceTotals,
+  calculateBillTotals,
   numberToWords,
 };

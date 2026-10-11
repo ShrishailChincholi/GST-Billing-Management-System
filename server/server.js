@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
+// Load env vars
 dotenv.config();
 
 // Connect to MongoDB
@@ -11,35 +12,51 @@ connectDB();
 
 const app = express();
 
+// ============================================================
 // Middleware
-app.use(cors());
+// ============================================================
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ============================================================
 // Routes
+// ============================================================
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/clients', require('./routes/clientRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/invoices', require('./routes/invoiceRoutes'));
-app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/sales', require('./routes/saleRoutes'));
 
-// Health check
+// ============================================================
+// Health Check
+// ============================================================
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
-    message: 'GST IMS API is running',
+    message: 'GST POS Billing API is running',
     timestamp: new Date().toISOString(),
   });
 });
 
-// 404 handler
+// ============================================================
+// 404 Handler
+// ============================================================
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-// Error handler (must be last)
+// ============================================================
+// Error Handler (must be last)
+// ============================================================
 app.use(errorHandler);
 
+// ============================================================
+// Start Server
+// ============================================================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

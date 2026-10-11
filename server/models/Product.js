@@ -7,7 +7,11 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Product name is required'],
       trim: true,
     },
-    description: String,
+    description: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     hsnCode: {
       type: String,
       required: [true, 'HSN/SAC code is required'],
@@ -16,7 +20,7 @@ const productSchema = new mongoose.Schema(
     unit: {
       type: String,
       default: 'PCS',
-      enum: ['PCS', 'KGS', 'LTR', 'MTR', 'BOX', 'SET', 'NOS', 'SQF', 'HR'],
+      enum: ['PCS', 'KGS', 'LTR', 'MTR', 'BOX', 'SET', 'NOS', 'SQF', 'HR', 'PKT', 'DZN'],
     },
     rate: {
       type: Number,
@@ -35,6 +39,11 @@ const productSchema = new mongoose.Schema(
     stock: {
       type: Number,
       default: 0,
+      min: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -44,5 +53,8 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Index for faster search
+productSchema.index({ name: 'text', hsnCode: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);
