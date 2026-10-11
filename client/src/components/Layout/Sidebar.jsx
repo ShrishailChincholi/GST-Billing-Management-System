@@ -8,7 +8,6 @@ import {
   Package,
   Settings,
   LogOut,
-  Receipt,
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -16,10 +15,10 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/new-bill', icon: ShoppingCart, label: 'New Bill' },
     { path: '/sales', icon: History, label: 'Sales History' },
     { path: '/products', icon: Package, label: 'Products' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 
@@ -30,6 +29,7 @@ const Sidebar = () => {
 
   return (
     <aside className="sidebar">
+      {/* Logo */}
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">G</div>
@@ -40,6 +40,7 @@ const Sidebar = () => {
         </div>
       </div>
 
+      {/* Business Info */}
       <div className="sidebar-business">
         <p className="sidebar-business-label">Shop</p>
         <p className="sidebar-business-name" title={user?.businessName}>
@@ -48,6 +49,7 @@ const Sidebar = () => {
         <p className="sidebar-business-gstin">GSTIN: {user?.gstin}</p>
       </div>
 
+      {/* Navigation */}
       <nav className="sidebar-nav">
         {navItems.map((item) => (
           <NavLink
@@ -63,6 +65,7 @@ const Sidebar = () => {
         ))}
       </nav>
 
+      {/* Logout */}
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="sidebar-logout">
           <LogOut size={20} />

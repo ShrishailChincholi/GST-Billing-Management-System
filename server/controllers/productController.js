@@ -1,9 +1,6 @@
 const Product = require('../models/Product');
-const Invoice = require('../models/Invoice');
 
-// @desc    Create new product
-// @route   POST /api/products
-// @access  Private
+
 const createProduct = async (req, res, next) => {
   try {
     const {
@@ -17,7 +14,6 @@ const createProduct = async (req, res, next) => {
       stock,
     } = req.body;
 
-    // Validation
     if (!name || !hsnCode || rate === undefined || gstRate === undefined) {
       return res.status(400).json({
         success: false,
@@ -25,7 +21,6 @@ const createProduct = async (req, res, next) => {
       });
     }
 
-    // Validate GST rate is one of the allowed values
     const allowedGSTRates = [0, 0.25, 3, 5, 12, 18, 28];
     if (!allowedGSTRates.includes(Number(gstRate))) {
       return res.status(400).json({
@@ -36,7 +31,7 @@ const createProduct = async (req, res, next) => {
 
     const product = await Product.create({
       name,
-      description,
+      description: description || '',
       hsnCode,
       unit: unit || 'PCS',
       rate,
@@ -56,14 +51,16 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+// ============================================================
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Private
+// ============================================================
 const getProducts = async (req, res, next) => {
   try {
-    const { search, gstRate, page = 1, limit = 100 } = req.query;
+    const { search, gstRate, page = 1, limit = 500 } = req.query;
 
-    const query = { createdBy: req.user.id };
+    const query = { createdBy: req.user.id, isActive: true };
 
     if (gstRate !== undefined && gstRate !== '') {
       query.gstRate = Number(gstRate);
@@ -88,8 +85,6 @@ const getProducts = async (req, res, next) => {
       success: true,
       count: products.length,
       total,
-      page: Number(page),
-      pages: Math.ceil(total / Number(limit)),
       data: products,
     });
   } catch (error) {
@@ -97,9 +92,11 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-// @desc    Get single product by ID
+// ============================================================
+// @desc    Get single product
 // @route   GET /api/products/:id
 // @access  Private
+// ============================================================
 const getProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -114,18 +111,17 @@ const getProduct = async (req, res, next) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: product,
-    });
+    res.json({ success: true, data: product });
   } catch (error) {
     next(error);
   }
 };
 
+// ============================================================
 // @desc    Update product
 // @route   PUT /api/products/:id
 // @access  Private
+// ============================================================
 const updateProduct = async (req, res, next) => {
   try {
     let product = await Product.findOne({
@@ -140,7 +136,6 @@ const updateProduct = async (req, res, next) => {
       });
     }
 
-    // Validate GST rate if being updated
     if (req.body.gstRate !== undefined) {
       const allowedGSTRates = [0, 0.25, 3, 5, 12, 18, 28];
       if (!allowedGSTRates.includes(Number(req.body.gstRate))) {
@@ -166,9 +161,11 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
+// ============================================================
 // @desc    Delete product
 // @route   DELETE /api/products/:id
 // @access  Private
+// ============================================================
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -183,18 +180,6 @@ const deleteProduct = async (req, res, next) => {
       });
     }
 
-    // Check if product is used in any invoice
-    const invoiceCount = await Invoice.countDocuments({
-      'items.product': product._id,
-    });
-
-    if (invoiceCount > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot delete product. It is used in ${invoiceCount} invoice(s).`,
-      });
-    }
-
     await product.deleteOne();
 
     res.json({
@@ -206,12 +191,14 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-// @desc    Update product stock
+// ============================================================
+// @desc    Update stock
 // @route   PATCH /api/products/:id/stock
 // @access  Private
+// ============================================================
 const updateStock = async (req, res, next) => {
   try {
-    const { quantity, operation } = req.body; // operation: 'add' | 'subtract' | 'set'
+    const { quantity, operation } = req.body;
 
     if (quantity === undefined || !operation) {
       return res.status(400).json({
@@ -244,30 +231,8 @@ const updateStock = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Stock updated successfully',
+      message: 'Stock updated',
       data: product,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// @desc    Get low stock products
-// @route   GET /api/products/low-stock
-// @access  Private
-const getLowStockProducts = async (req, res, next) => {
-  try {
-    const { threshold = 10 } = req.query;
-
-    const products = await Product.find({
-      createdBy: req.user.id,
-      stock: { $lte: Number(threshold) },
-    }).sort({ stock: 1 });
-
-    res.json({
-      success: true,
-      count: products.length,
-      data: products,
     });
   } catch (error) {
     next(error);
@@ -281,5 +246,4 @@ module.exports = {
   updateProduct,
   deleteProduct,
   updateStock,
-  getLowStockProducts,
 };

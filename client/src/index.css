@@ -1,16 +1,21 @@
-/* 1. Design tokens */
+/* ============================================================
+   GST POS Billing - Main Stylesheet
+   Import order matters: variables first, then global, then components
+   ============================================================ */
+
+/* 1. Design Tokens (CSS custom properties) - MUST be first */
 @import './styles/variables.css';
 
-/* 2. Global reset + utilities */
+/* 2. Global reset, base typography, utilities, animations */
 @import './styles/global.css';
 
-/* 3. Components */
+/* 3. Reusable components (buttons, inputs, cards, badges, modals) */
 @import './styles/components.css';
 
-/* 4. Layout */
+/* 4. App shell (sidebar, header, main content, responsive) */
 @import './styles/layout.css';
 
-/* 5. Pages */
+/* 5. Page-specific styles */
 @import './styles/auth.css';
 @import './styles/dashboard.css';
 @import './styles/tables.css';
