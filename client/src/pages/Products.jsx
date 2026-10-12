@@ -12,14 +12,15 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
+// ✅ Use empty strings for numeric fields so they show as empty in the form
 const INITIAL_FORM = {
   name: '',
   description: '',
   hsnCode: '',
   unit: 'PCS',
-  rate: 0,
+  rate: '',       // ← string, empty by default
   gstRate: 18,
-  stock: 0,
+  stock: '',      // ← string, empty by default
 };
 
 const UNITS = ['PCS', 'KGS', 'LTR', 'MTR', 'BOX', 'SET', 'NOS', 'SQF', 'HR', 'PKT', 'DZN'];
@@ -76,9 +77,10 @@ const Products = () => {
         description: product.description || '',
         hsnCode: product.hsnCode || '',
         unit: product.unit || 'PCS',
-        rate: product.rate || 0,
+        // Convert number to string for input display
+        rate: product.rate !== undefined && product.rate !== null ? String(product.rate) : '',
         gstRate: product.gstRate || 18,
-        stock: product.stock || 0,
+        stock: product.stock !== undefined && product.stock !== null ? String(product.stock) : '',
       });
     } else {
       setEditingId(null);
@@ -95,14 +97,40 @@ const Products = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ===== Validate =====
+    if (!formData.name.trim()) {
+      toast.error('Product name is required');
+      return;
+    }
+    if (!formData.hsnCode.trim()) {
+      toast.error('HSN/SAC code is required');
+      return;
+    }
+    if (formData.rate === '' || Number(formData.rate) <= 0) {
+      toast.error('Please enter a valid rate');
+      return;
+    }
+
     setSaving(true);
+
+    // ===== Convert strings to numbers before sending =====
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      hsnCode: formData.hsnCode.trim(),
+      unit: formData.unit,
+      rate: Number(formData.rate),
+      gstRate: Number(formData.gstRate),
+      stock: formData.stock === '' ? 0 : Number(formData.stock),
+    };
 
     try {
       if (editingId) {
-        await api.put(`/products/${editingId}`, formData);
+        await api.put(`/products/${editingId}`, payload);
         toast.success('Product updated successfully');
       } else {
-        await api.post('/products', formData);
+        await api.post('/products', payload);
         toast.success('Product created successfully');
       }
       handleCloseModal();
@@ -334,6 +362,7 @@ const Products = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
+                {/* Product Name */}
                 <div className="form-group">
                   <label className="label label-required">Product Name</label>
                   <input
@@ -344,10 +373,12 @@ const Products = () => {
                     }
                     className="input-field"
                     placeholder="LED Bulb 9W"
+                    autoFocus
                     required
                   />
                 </div>
 
+                {/* Description */}
                 <div className="form-group">
                   <label className="label">Description</label>
                   <textarea
@@ -361,6 +392,7 @@ const Products = () => {
                   />
                 </div>
 
+                {/* HSN + Unit */}
                 <div className="invoice-form-row two-col">
                   <div className="form-group">
                     <label className="label label-required">HSN / SAC Code</label>
@@ -394,6 +426,7 @@ const Products = () => {
                   </div>
                 </div>
 
+                {/* Rate + GST */}
                 <div className="invoice-form-row two-col">
                   <div className="form-group">
                     <label className="label label-required">Rate (₹)</label>
@@ -405,10 +438,11 @@ const Products = () => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          rate: parseFloat(e.target.value) || 0,
+                          rate: e.target.value,   // ✅ keep as string
                         })
                       }
                       className="input-field"
+                      placeholder="150"
                       required
                     />
                   </div>
@@ -444,6 +478,7 @@ const Products = () => {
                   </div>
                 </div>
 
+                {/* Stock */}
                 <div className="form-group">
                   <label className="label">Stock Quantity</label>
                   <input
@@ -453,7 +488,7 @@ const Products = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        stock: parseInt(e.target.value) || 0,
+                        stock: e.target.value,   // ✅ keep as string
                       })
                     }
                     className="input-field"

@@ -7,10 +7,10 @@ import {
   Search,
   Receipt,
   Banknote,
-  Eye,
   Printer,
   FileText,
   IndianRupee,
+  Trash2,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { printBill, downloadBillPDF } from '../utils/billPDF';
@@ -29,50 +29,64 @@ const SalesHistory = () => {
     fetchSales();
   }, []);
 
+  // ===== Filter =====
   useEffect(() => {
     let result = sales;
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
         (s) =>
-          s.invoiceNumber.toLowerCase().includes(q) ||
-          (s.customerName || s.clientDetails?.name || '').toLowerCase().includes(q)
+          (s.billNumber || '').toLowerCase().includes(q) ||
+          (s.customerName || '').toLowerCase().includes(q) ||
+          (s.customerPhone || '').includes(q)
       );
     }
     if (typeFilter) {
-      result = result.filter((s) => (s.billType || 'GST') === typeFilter);
+      result = result.filter((s) => s.billType === typeFilter);
     }
     setFiltered(result);
   }, [search, typeFilter, sales]);
 
+  // ===== Fetch =====
   const fetchSales = async () => {
     try {
-      const { data } = await api.get('/invoices');
-      setSales(data.data);
-      setFiltered(data.data);
+      const { data } = await api.get('/sales');   // ✅ FIXED: /sales not /invoices
+      setSales(data.data || []);
+      setFiltered(data.data || []);
     } catch (error) {
       toast.error('Failed to load sales');
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const stats = {
-    totalSales: sales.length,
-    totalRevenue: sales.reduce((s, i) => s + i.grandTotal, 0),
-    cashBills: sales.filter((s) => (s.billType || 'GST') === 'CASH').length,
-    gstBills: sales.filter((s) => (s.billType || 'GST') === 'GST').length,
+  // ===== Delete =====
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this bill? Stock will be restored.')) return;
+    try {
+      await api.delete(`/sales/${id}`);
+      toast.success('Bill deleted');
+      fetchSales();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete');
+    }
   };
 
-  const getCustomerName = (sale) =>
-    sale.customerName || sale.clientDetails?.name || 'Walk-in Customer';
+  // ===== Stats =====
+  const stats = {
+    totalSales: sales.length,
+    totalRevenue: sales.reduce((s, i) => s + (i.grandTotal || 0), 0),
+    cashBills: sales.filter((s) => s.billType === 'CASH').length,
+    gstBills: sales.filter((s) => s.billType === 'GST').length,
+  };
 
   return (
     <>
       <Header title="Sales History" />
       <div className="page-content">
         <div className="page-content-inner">
-          {/* Stats */}
+          {/* ===== Stats ===== */}
           <div className="stats-grid" style={{ marginBottom: 'var(--space-6)' }}>
             <div className="stat-card">
               <div className="stat-icon stat-icon-blue">
@@ -89,7 +103,9 @@ const SalesHistory = () => {
               </div>
               <div className="stat-content">
                 <p className="stat-label">Total Revenue</p>
-                <p className="stat-value">{formatCurrency(stats.totalRevenue, false)}</p>
+                <p className="stat-value">
+                  {formatCurrency(stats.totalRevenue, false)}
+                </p>
               </div>
             </div>
             <div className="stat-card">
@@ -112,7 +128,7 @@ const SalesHistory = () => {
             </div>
           </div>
 
-          {/* Table */}
+          {/* ===== Table ===== */}
           <div className="table-container">
             <div className="table-toolbar">
               <div className="table-toolbar-filters">
@@ -120,7 +136,7 @@ const SalesHistory = () => {
                   <Search size={16} />
                   <input
                     type="text"
-                    placeholder="Search by bill number or customer..."
+                    placeholder="Search by bill #, customer, phone..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="input-field"
@@ -136,6 +152,12 @@ const SalesHistory = () => {
                   <option value="GST">GST Bills</option>
                 </select>
               </div>
+              <button
+                onClick={() => navigate('/new-bill')}
+                className="btn btn-primary"
+              >
+                <Receipt size={18} /> New Bill
+              </button>
             </div>
 
             {loading ? (
@@ -171,20 +193,29 @@ const SalesHistory = () => {
                   </thead>
                   <tbody>
                     {filtered.map((sale) => {
-                      const type = sale.billType || 'GST';
+                      const type = sale.billType || 'CASH';
                       return (
                         <tr key={sale._id}>
-                          <td className="invoice-number-cell">{sale.invoiceNumber}</td>
+                          {/* ✅ billNumber instead of invoiceNumber */}
+                          <td className="invoice-number-cell">
+                            {sale.billNumber || '—'}
+                          </td>
                           <td>
-                            <span className={`bill-type-badge ${type.toLowerCase()}`}>
-                              {type === 'GST' ? <FileText size={10} /> : <Banknote size={10} />}
+                            <span
+                              className={`bill-type-badge ${type.toLowerCase()}`}
+                            >
+                              {type === 'GST' ? (
+                                <FileText size={10} />
+                              ) : (
+                                <Banknote size={10} />
+                              )}
                               {type}
                             </span>
                           </td>
                           <td>
                             <div className="invoice-client-cell">
                               <span className="invoice-client-name">
-                                {getCustomerName(sale)}
+                                {sale.customerName || 'Walk-in Customer'}
                               </span>
                               {sale.customerPhone && (
                                 <span className="invoice-client-gstin">
@@ -193,7 +224,8 @@ const SalesHistory = () => {
                               )}
                             </div>
                           </td>
-                          <td>{formatDate(sale.invoiceDate)}</td>
+                          {/* ✅ billDate instead of invoiceDate */}
+                          <td>{formatDate(sale.billDate)}</td>
                           <td>{sale.items?.length || 0}</td>
                           <td className="table-amount">
                             {formatCurrency(sale.grandTotal, false)}
@@ -216,13 +248,18 @@ const SalesHistory = () => {
                                 <Printer size={16} />
                               </button>
                               <button
-                                onClick={() =>
-                                  downloadBillPDF(sale, user, type)
-                                }
+                                onClick={() => downloadBillPDF(sale, user, type)}
                                 className="table-action-btn primary"
                                 title="Download PDF"
                               >
                                 <FileText size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(sale._id)}
+                                className="table-action-btn danger"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </td>
