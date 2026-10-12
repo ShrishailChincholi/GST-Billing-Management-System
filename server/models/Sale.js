@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+// ============================================================
+// Sale Item Schema
+// ============================================================
 const saleItemSchema = new mongoose.Schema(
   {
     product: {
@@ -17,23 +20,26 @@ const saleItemSchema = new mongoose.Schema(
     cgstRate: { type: Number, default: 0 },
     sgstRate: { type: Number, default: 0 },
     igstRate: { type: Number, default: 0 },
-    cessRate: { type: Number, default: 0 },
     cgstAmount: { type: Number, default: 0 },
     sgstAmount: { type: Number, default: 0 },
     igstAmount: { type: Number, default: 0 },
-    cessAmount: { type: Number, default: 0 },
     totalAmount: { type: Number, required: true },
   },
   { _id: false }
 );
 
+// ============================================================
+// Sale Schema
+// ============================================================
 const saleSchema = new mongoose.Schema(
   {
-    // Bill Info
+    // ===== Bill Info =====
+    // NOT required — generated in the controller before creation
     billNumber: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true, // allows docs without billNumber during creation
+      trim: true,
     },
     billType: {
       type: String,
@@ -47,7 +53,7 @@ const saleSchema = new mongoose.Schema(
       default: Date.now,
     },
 
-    // Customer Info (optional for cash bills)
+    // ===== Customer Info =====
     customerName: {
       type: String,
       default: 'Walk-in Customer',
@@ -65,29 +71,28 @@ const saleSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Place of Supply (for GST calc)
+    // ===== Place of Supply =====
     placeOfSupply: {
       state: { type: String, default: '' },
       stateCode: { type: String, default: '' },
     },
 
-    // Items
+    // ===== Items =====
     items: [saleItemSchema],
 
-    // Totals
+    // ===== Totals =====
     subTotal: { type: Number, required: true },
     totalDiscount: { type: Number, default: 0 },
     totalTaxableAmount: { type: Number, required: true },
     totalCGST: { type: Number, default: 0 },
     totalSGST: { type: Number, default: 0 },
     totalIGST: { type: Number, default: 0 },
-    totalCess: { type: Number, default: 0 },
     totalTax: { type: Number, default: 0 },
     roundOff: { type: Number, default: 0 },
     grandTotal: { type: Number, required: true },
     amountInWords: { type: String, required: true },
 
-    // Payment
+    // ===== Payment =====
     paymentMode: {
       type: String,
       enum: ['CASH', 'UPI', 'CARD', 'NETBANKING', 'CREDIT'],
@@ -99,7 +104,7 @@ const saleSchema = new mongoose.Schema(
       default: 'PAID',
     },
 
-    // Metadata
+    // ===== Metadata =====
     isInterState: { type: Boolean, default: false },
     notes: { type: String, default: '' },
     createdBy: {
@@ -111,16 +116,6 @@ const saleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto-generate bill number before save (Mongoose v8 - no next callback)
-saleSchema.pre('save', async function () {
-  if (!this.billNumber) {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const count = await mongoose.model('Sale').countDocuments();
-    const prefix = this.billType === 'CASH' ? 'CB' : 'GST';
-    this.billNumber = `${prefix}-${year}${month}-${String(count + 1).padStart(5, '0')}`;
-  }
-});
+// No pre-save hook — bill number is generated in the controller
 
 module.exports = mongoose.model('Sale', saleSchema);

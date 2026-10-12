@@ -32,10 +32,6 @@ const productSchema = new mongoose.Schema(
       required: [true, 'GST rate is required'],
       enum: [0, 0.25, 3, 5, 12, 18, 28],
     },
-    cessRate: {
-      type: Number,
-      default: 0,
-    },
     stock: {
       type: Number,
       default: 0,
@@ -54,7 +50,6 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for faster search
 productSchema.index({ name: 'text', hsnCode: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);

@@ -9,8 +9,8 @@ import {
   Trash2,
   Package,
   X,
-  IndianRupee,
 } from 'lucide-react';
+import { formatCurrency } from '../utils/formatters';
 
 const INITIAL_FORM = {
   name: '',
@@ -19,11 +19,10 @@ const INITIAL_FORM = {
   unit: 'PCS',
   rate: 0,
   gstRate: 18,
-  cessRate: 0,
   stock: 0,
 };
 
-const UNITS = ['PCS', 'KGS', 'LTR', 'MTR', 'BOX', 'SET', 'NOS', 'SQF', 'HR'];
+const UNITS = ['PCS', 'KGS', 'LTR', 'MTR', 'BOX', 'SET', 'NOS', 'SQF', 'HR', 'PKT', 'DZN'];
 const GST_RATES = [0, 0.25, 3, 5, 12, 18, 28];
 
 const Products = () => {
@@ -79,7 +78,6 @@ const Products = () => {
         unit: product.unit || 'PCS',
         rate: product.rate || 0,
         gstRate: product.gstRate || 18,
-        cessRate: product.cessRate || 0,
         stock: product.stock || 0,
       });
     } else {
@@ -127,16 +125,9 @@ const Products = () => {
     }
   };
 
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 2,
-    }).format(amount);
-
   return (
     <>
-      <Header title="Products & Services" />
+      <Header title="Products" />
 
       <div className="page-content">
         <div className="page-content-inner">
@@ -185,11 +176,13 @@ const Products = () => {
             ) : filtered.length === 0 ? (
               <div className="empty-state">
                 <Package size={64} className="empty-state-icon" />
-                <h3>{search || gstFilter ? 'No products found' : 'No products yet'}</h3>
+                <h3>
+                  {search || gstFilter ? 'No products found' : 'No products yet'}
+                </h3>
                 <p>
                   {search || gstFilter
                     ? 'Try a different filter.'
-                    : 'Add your first product or service to start billing.'}
+                    : 'Add your first product to start billing.'}
                 </p>
                 {!search && !gstFilter && (
                   <button
@@ -205,7 +198,7 @@ const Products = () => {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Product / Service</th>
+                      <th>Product</th>
                       <th>HSN / SAC</th>
                       <th>Unit</th>
                       <th>Rate</th>
@@ -342,7 +335,7 @@ const Products = () => {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group">
-                  <label className="label label-required">Product / Service Name</label>
+                  <label className="label label-required">Product Name</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -438,44 +431,34 @@ const Products = () => {
                         </option>
                       ))}
                     </select>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--color-gray-500)',
+                        marginTop: 4,
+                        display: 'block',
+                      }}
+                    >
+                      Used only for GST bills. Cash bills ignore this.
+                    </span>
                   </div>
                 </div>
 
-                <div className="invoice-form-row two-col">
-                  <div className="form-group">
-                    <label className="label">Cess Rate (%)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.cessRate}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          cessRate: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="input-field"
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="label">Stock Quantity</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={formData.stock}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          stock: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="input-field"
-                      placeholder="0"
-                    />
-                  </div>
+                <div className="form-group">
+                  <label className="label">Stock Quantity</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.stock}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        stock: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="input-field"
+                    placeholder="0"
+                  />
                 </div>
               </div>
 
@@ -492,7 +475,11 @@ const Products = () => {
                   disabled={saving}
                   className="btn btn-primary"
                 >
-                  {saving ? 'Saving...' : editingId ? 'Update Product' : 'Add Product'}
+                  {saving
+                    ? 'Saving...'
+                    : editingId
+                    ? 'Update Product'
+                    : 'Add Product'}
                 </button>
               </div>
             </form>

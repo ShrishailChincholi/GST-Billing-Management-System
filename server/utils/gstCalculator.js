@@ -1,6 +1,5 @@
 /**
- * GST Calculator
- * Handles intra-state (CGST+SGST) and inter-state (IGST) automatically
+ * GST Calculator - Simplified (no cess)
  */
 
 const isInterState = (supplierStateCode, recipientStateCode) => {
@@ -8,23 +7,13 @@ const isInterState = (supplierStateCode, recipientStateCode) => {
   return supplierStateCode !== recipientStateCode;
 };
 
-/**
- * Calculate GST for a single line item
- */
-const calculateLineItemGST = (
-  item,
-  supplierStateCode,
-  recipientStateCode
-) => {
+const calculateLineItemGST = (item, supplierStateCode, recipientStateCode) => {
   const lineGross = item.quantity * item.rate;
   const discount = item.discount || 0;
   const taxableAmount = lineGross - discount;
   const gstRate = item.gstRate || 0;
-  const cessRate = item.cessRate || 0;
 
   const totalGST = (taxableAmount * gstRate) / 100;
-  const totalCess = (taxableAmount * cessRate) / 100;
-
   const interState = isInterState(supplierStateCode, recipientStateCode);
 
   let cgstRate = 0,
@@ -51,18 +40,13 @@ const calculateLineItemGST = (
     cgstRate,
     sgstRate,
     igstRate,
-    cessRate,
     cgstAmount: parseFloat(cgstAmount.toFixed(2)),
     sgstAmount: parseFloat(sgstAmount.toFixed(2)),
     igstAmount: parseFloat(igstAmount.toFixed(2)),
-    cessAmount: parseFloat(totalCess.toFixed(2)),
-    totalAmount: parseFloat((taxableAmount + totalGST + totalCess).toFixed(2)),
+    totalAmount: parseFloat((taxableAmount + totalGST).toFixed(2)),
   };
 };
 
-/**
- * Calculate full sale/bill totals
- */
 const calculateBillTotals = (items, supplierStateCode, recipientStateCode) => {
   const processedItems = items.map((item) =>
     calculateLineItemGST(item, supplierStateCode, recipientStateCode)
@@ -80,31 +64,12 @@ const calculateBillTotals = (items, supplierStateCode, recipientStateCode) => {
     (sum, item) => sum + item.taxableAmount,
     0
   );
-  const totalCGST = processedItems.reduce(
-    (sum, item) => sum + item.cgstAmount,
-    0
-  );
-  const totalSGST = processedItems.reduce(
-    (sum, item) => sum + item.sgstAmount,
-    0
-  );
-  const totalIGST = processedItems.reduce(
-    (sum, item) => sum + item.igstAmount,
-    0
-  );
-  const totalCess = processedItems.reduce(
-    (sum, item) => sum + item.cessAmount,
-    0
-  );
+  const totalCGST = processedItems.reduce((sum, item) => sum + item.cgstAmount, 0);
+  const totalSGST = processedItems.reduce((sum, item) => sum + item.sgstAmount, 0);
+  const totalIGST = processedItems.reduce((sum, item) => sum + item.igstAmount, 0);
 
   const grandTotal = parseFloat(
-    (
-      totalTaxableAmount +
-      totalCGST +
-      totalSGST +
-      totalIGST +
-      totalCess
-    ).toFixed(2)
+    (totalTaxableAmount + totalCGST + totalSGST + totalIGST).toFixed(2)
   );
 
   const roundedTotal = Math.round(grandTotal);
@@ -118,16 +83,12 @@ const calculateBillTotals = (items, supplierStateCode, recipientStateCode) => {
     totalCGST: parseFloat(totalCGST.toFixed(2)),
     totalSGST: parseFloat(totalSGST.toFixed(2)),
     totalIGST: parseFloat(totalIGST.toFixed(2)),
-    totalCess: parseFloat(totalCess.toFixed(2)),
-    totalTax: parseFloat((totalCGST + totalSGST + totalIGST + totalCess).toFixed(2)),
+    totalTax: parseFloat((totalCGST + totalSGST + totalIGST).toFixed(2)),
     roundOff,
     grandTotal: roundedTotal,
   };
 };
 
-/**
- * Convert number to Indian words (Rupees and Paise)
- */
 const numberToWords = (num) => {
   const ones = [
     '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',

@@ -7,6 +7,27 @@ const {
 } = require('../utils/gstCalculator');
 
 // ============================================================
+// Helper: Generate unique bill number
+// ============================================================
+const generateBillNumber = async (billType) => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const prefix = billType === 'CASH' ? 'CB' : 'GST';
+
+  // Count existing bills of this type in the current month
+  const startOfMonth = new Date(year, now.getMonth(), 1);
+  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const count = await Sale.countDocuments({
+    billType,
+    createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+  });
+
+  return `${prefix}-${year}${month}-${String(count + 1).padStart(5, '0')}`;
+};
+
+// ============================================================
 // @desc    Create a new sale/bill
 // @route   POST /api/sales
 // @access  Private
@@ -24,7 +45,7 @@ const createSale = async (req, res, next) => {
       notes = '',
     } = req.body;
 
-    // Validation
+    // ===== Validation =====
     if (!items || items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -39,22 +60,24 @@ const createSale = async (req, res, next) => {
       });
     }
 
-    // Get supplier state from logged-in user
+    // ===== Determine inter-state =====
     const supplierStateCode = req.user.address?.stateCode || '';
-    const recipientStateCode =
-      placeOfSupply?.stateCode || supplierStateCode;
-
+    const recipientStateCode = placeOfSupply?.stateCode || supplierStateCode;
     const interState = isInterState(supplierStateCode, recipientStateCode);
 
-    // Calculate GST totals
+    // ===== Calculate GST totals =====
     const totals = calculateBillTotals(
       items,
       supplierStateCode,
       recipientStateCode
     );
 
-    // Create sale
+    // ===== Generate bill number =====
+    const billNumber = await generateBillNumber(billType);
+
+    // ===== Create sale =====
     const sale = await Sale.create({
+      billNumber,
       billType,
       billDate: new Date(),
       customerName: customerName || 'Walk-in Customer',
@@ -71,7 +94,6 @@ const createSale = async (req, res, next) => {
       totalCGST: billType === 'GST' ? totals.totalCGST : 0,
       totalSGST: billType === 'GST' ? totals.totalSGST : 0,
       totalIGST: billType === 'GST' ? totals.totalIGST : 0,
-      totalCess: totals.totalCess,
       totalTax: billType === 'GST' ? totals.totalTax : 0,
       roundOff: totals.roundOff,
       grandTotal: totals.grandTotal,
@@ -83,7 +105,7 @@ const createSale = async (req, res, next) => {
       createdBy: req.user.id,
     });
 
-    // Update product stock
+    // ===== Update product stock =====
     for (const item of totals.items) {
       if (item.product) {
         await Product.findByIdAndUpdate(item.product, {
@@ -173,7 +195,7 @@ const getSale = async (req, res, next) => {
 };
 
 // ============================================================
-// @desc    Delete sale
+// @desc    Delete sale (restores stock)
 // @route   DELETE /api/sales/:id
 // @access  Private
 // ============================================================
@@ -212,34 +234,30 @@ const deleteSale = async (req, res, next) => {
 };
 
 // ============================================================
-// @desc    Get sales stats (dashboard)
+// @desc    Get sales stats (for dashboard)
 // @route   GET /api/sales/stats
 // @access  Private
 // ============================================================
 const getSalesStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const [
-      totalSales,
-      todaySales,
-      cashBills,
-      gstBills,
-      recentSales,
-    ] = await Promise.all([
-      Sale.find({ createdBy: userId }),
-      Sale.find({
-        createdBy: userId,
-        billDate: { $gte: today, $lt: tomorrow },
-      }),
-      Sale.countDocuments({ createdBy: userId, billType: 'CASH' }),
-      Sale.countDocuments({ createdBy: userId, billType: 'GST' }),
-      Sale.find({ createdBy: userId }).sort({ createdAt: -1 }).limit(5),
-    ]);
+    const [totalSales, todaySales, cashBills, gstBills, recentSales] =
+      await Promise.all([
+        Sale.find({ createdBy: userId }),
+        Sale.find({
+          createdBy: userId,
+          billDate: { $gte: today, $lt: tomorrow },
+        }),
+        Sale.countDocuments({ createdBy: userId, billType: 'CASH' }),
+        Sale.countDocuments({ createdBy: userId, billType: 'GST' }),
+        Sale.find({ createdBy: userId }).sort({ createdAt: -1 }).limit(5),
+      ]);
 
     const totalRevenue = totalSales.reduce((s, x) => s + x.grandTotal, 0);
     const todayRevenue = todaySales.reduce((s, x) => s + x.grandTotal, 0);

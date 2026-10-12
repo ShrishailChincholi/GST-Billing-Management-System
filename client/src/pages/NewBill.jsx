@@ -1,7 +1,7 @@
-/* eslint-disable react/jsx-no-undef */
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Layout/Header';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import {
@@ -15,10 +15,10 @@ import {
   Check,
   Printer,
   Save,
+  Package,
 } from 'lucide-react';
-import { formatCurrency, numberToWords } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import { printBill, downloadBillPDF } from '../utils/billPDF';
-import { useAuth } from '../context/AuthContext';
 
 const PAYMENT_MODES = ['CASH', 'UPI', 'CARD', 'NETBANKING', 'CREDIT'];
 
@@ -27,14 +27,13 @@ const NewBill = () => {
   const { user } = useAuth();
 
   // ===== State =====
-  const [billType, setBillType] = useState('CASH'); // 'GST' or 'CASH'
+  const [billType, setBillType] = useState('CASH');
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Customer info (used for GST bills or optional name for cash)
   const [customer, setCustomer] = useState({
     name: '',
     phone: '',
@@ -104,20 +103,6 @@ const NewBill = () => {
     );
   };
 
-  const updateRate = (id, newRate) => {
-    setCart((prev) =>
-      prev.map((i) => (i._id === id ? { ...i, rate: parseFloat(newRate) || 0 } : i))
-    );
-  };
-
-  const updateDiscount = (id, newDiscount) => {
-    setCart((prev) =>
-      prev.map((i) =>
-        i._id === id ? { ...i, discount: parseFloat(newDiscount) || 0 } : i
-      )
-    );
-  };
-
   const removeFromCart = (id) => {
     setCart((prev) => prev.filter((i) => i._id !== id));
   };
@@ -137,15 +122,15 @@ const NewBill = () => {
     let totalSGST = 0;
     let totalIGST = 0;
     let totalCess = 0;
+    let totalDiscount = 0;
 
-    // For cash bills, we still compute GST internally for reporting,
-    // but the customer-facing total = taxable + GST (inclusive).
     cart.forEach((item) => {
       const lineGross = item.quantity * item.rate;
       const lineDiscount = item.discount || 0;
       const lineTaxable = lineGross - lineDiscount;
 
       subTotal += lineGross;
+      totalDiscount += lineDiscount;
       taxableAmount += lineTaxable;
 
       const gstAmount = (lineTaxable * item.gstRate) / 100;
@@ -154,12 +139,14 @@ const NewBill = () => {
       totalCess += (lineTaxable * item.cessRate) / 100;
     });
 
-    const grandTotal = taxableAmount + totalCGST + totalSGST + totalIGST + totalCess;
+    const grandTotal =
+      taxableAmount + totalCGST + totalSGST + totalIGST + totalCess;
     const roundedTotal = Math.round(grandTotal);
     const roundOff = roundedTotal - grandTotal;
 
     return {
       subTotal,
+      totalDiscount,
       taxableAmount,
       totalCGST,
       totalSGST,
@@ -171,7 +158,7 @@ const NewBill = () => {
     };
   }, [cart]);
 
-  // ===== Save / Generate Bill =====
+  // ===== Generate Bill =====
   const handleGenerateBill = async () => {
     if (cart.length === 0) {
       toast.error('Add at least one product to the bill');
@@ -186,65 +173,31 @@ const NewBill = () => {
     setSaving(true);
 
     try {
-      // Build items array in the format the backend expects
-      const items = cart.map((item) => ({
-        name: item.name,
-        hsnCode: item.hsnCode,
-        quantity: item.quantity,
-        unit: item.unit,
-        rate: item.rate,
-        discount: item.discount || 0,
-        gstRate: billType === 'GST' ? item.gstRate : 0, // Cash = no GST in items
-        cessRate: 0,
-      }));
-
-      // For cash bills, we compute GST as 0 in items to keep the total clean.
-      // But we still record gstRate on the item so reports work.
-      // Simplest: pass gstRate as-is; the backend auto-computes.
-
       const payload = {
         billType,
-        items: billType === 'CASH'
-          ? cart.map((item) => ({
-              name: item.name,
-              hsnCode: item.hsnCode,
-              quantity: item.quantity,
-              unit: item.unit,
-              rate: item.rate,
-              discount: item.discount || 0,
-              gstRate: 0,
-              cessRate: 0,
-            }))
-          : items,
         customerName: customer.name || 'Walk-in Customer',
-        customerPhone: customer.phone,
+        customerPhone: customer.phone || '',
+        customerGstin: billType === 'GST' ? customer.gstin || '' : '',
         paymentMode,
-        invoiceDate: new Date().toISOString(),
-        dueDate: new Date().toISOString(),
+        items: cart.map((item) => ({
+          product: item._id,
+          name: item.name,
+          hsnCode: item.hsnCode,
+          quantity: item.quantity,
+          unit: item.unit,
+          rate: item.rate,
+          discount: item.discount || 0,
+          gstRate: billType === 'GST' ? item.gstRate : 0,
+          cessRate: 0,
+        })),
         notes: billType === 'CASH' ? 'Cash Bill' : 'GST Tax Invoice',
-        terms: '',
       };
 
-      const { data } = await api.post('/invoices', payload);
-      const created = data.data;
+      const { data } = await api.post('/sales', payload);
 
-      // Auto-issue the invoice (skip draft)
-      await api.post(`/invoices/${created._id}/issue`);
-
-      // Mark as paid immediately (POS behavior)
-      await api.post(`/invoices/${created._id}/payment`, {
-        amount: created.grandTotal,
-        paymentDate: new Date().toISOString(),
-        paymentMethod: paymentMode,
-      });
-
-      // Show success modal
       setShowSuccess({
-        ...created,
+        ...data.data,
         billType,
-        customerName: customer.name || 'Walk-in Customer',
-        customerGstin: customer.gstin,
-        paymentMode,
       });
 
       toast.success('Bill generated successfully!');
@@ -281,7 +234,10 @@ const NewBill = () => {
         <Header title="Bill Generated" />
         <div className="page-content">
           <div className="page-content-inner">
-            <div className="modal-backdrop" style={{ position: 'static', background: 'transparent' }}>
+            <div
+              className="modal-backdrop"
+              style={{ position: 'static', background: 'transparent' }}
+            >
               <div className="modal" style={{ maxWidth: 480 }}>
                 <div className="sale-success-modal">
                   <div className="sale-success-icon">
@@ -289,17 +245,25 @@ const NewBill = () => {
                   </div>
                   <h2>Bill Generated!</h2>
                   <p>
-                    {showSuccess.billType === 'GST' ? 'GST Tax Invoice' : 'Cash Bill'} ·{' '}
-                    {showSuccess.invoiceNumber}
+                    {showSuccess.billType === 'GST'
+                      ? 'GST Tax Invoice'
+                      : 'Cash Bill'}{' '}
+                    · {showSuccess.billNumber}
                   </p>
                   <div className="sale-success-amount">
                     {formatCurrency(showSuccess.grandTotal)}
                   </div>
                   <div className="sale-success-actions">
-                    <button onClick={handlePrintBill} className="btn btn-secondary">
+                    <button
+                      onClick={handlePrintBill}
+                      className="btn btn-secondary"
+                    >
                       <Printer size={16} /> Print
                     </button>
-                    <button onClick={handleDownloadBill} className="btn btn-secondary">
+                    <button
+                      onClick={handleDownloadBill}
+                      className="btn btn-secondary"
+                    >
                       <Save size={16} /> Download PDF
                     </button>
                     <button onClick={handleNewBill} className="btn btn-primary">
@@ -326,7 +290,9 @@ const NewBill = () => {
             <button
               type="button"
               onClick={() => setBillType('CASH')}
-              className={`bill-type-option cash${billType === 'CASH' ? ' active' : ''}`}
+              className={`bill-type-option cash${
+                billType === 'CASH' ? ' active' : ''
+              }`}
             >
               <div className="bill-type-option-icon">
                 <Banknote size={24} />
@@ -342,7 +308,9 @@ const NewBill = () => {
             <button
               type="button"
               onClick={() => setBillType('GST')}
-              className={`bill-type-option gst${billType === 'GST' ? ' active' : ''}`}
+              className={`bill-type-option gst${
+                billType === 'GST' ? ' active' : ''
+              }`}
             >
               <div className="bill-type-option-icon">
                 <Receipt size={24} />
@@ -360,10 +328,12 @@ const NewBill = () => {
           <div className="pos-layout">
             {/* LEFT: Products + Customer Info */}
             <div>
-              {/* Customer Info (GST bill shows more fields) */}
+              {/* Customer Info */}
               <div className="customer-panel">
                 <p className="customer-panel-title">
-                  {billType === 'GST' ? 'Customer Details (Required)' : 'Customer Details (Optional)'}
+                  {billType === 'GST'
+                    ? 'Customer Details (Required)'
+                    : 'Customer Details (Optional)'}
                 </p>
                 <div className="invoice-form-row two-col">
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -375,7 +345,9 @@ const NewBill = () => {
                         setCustomer({ ...customer, name: e.target.value })
                       }
                       className="input-field"
-                      placeholder={billType === 'GST' ? 'ABC Traders' : 'Walk-in Customer'}
+                      placeholder={
+                        billType === 'GST' ? 'ABC Traders' : 'Walk-in Customer'
+                      }
                     />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -388,12 +360,16 @@ const NewBill = () => {
                       }
                       className="input-field"
                       placeholder="9876543210"
+                      maxLength={10}
                     />
                   </div>
                 </div>
 
                 {billType === 'GST' && (
-                  <div className="form-group" style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}>
+                  <div
+                    className="form-group"
+                    style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}
+                  >
                     <label className="label">Customer GSTIN</label>
                     <input
                       type="text"
@@ -454,7 +430,9 @@ const NewBill = () => {
                           </span>
                         </div>
                         <span
-                          className={`product-card-stock${product.stock <= 5 ? ' low' : ''}`}
+                          className={`product-card-stock${
+                            product.stock <= 5 ? ' low' : ''
+                          }`}
                         >
                           Stock: {product.stock} {product.unit}
                         </span>
@@ -498,11 +476,20 @@ const NewBill = () => {
                           {formatCurrency(item.rate, false)} × {item.quantity} ={' '}
                           {formatCurrency(item.rate * item.quantity, false)}
                         </p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            marginTop: 6,
+                          }}
+                        >
                           <div className="qty-control">
                             <button
                               type="button"
-                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                              onClick={() =>
+                                updateQuantity(item._id, item.quantity - 1)
+                              }
                               className="qty-btn"
                               disabled={item.quantity <= 1}
                             >
@@ -511,7 +498,9 @@ const NewBill = () => {
                             <span className="qty-value">{item.quantity}</span>
                             <button
                               type="button"
-                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                              onClick={() =>
+                                updateQuantity(item._id, item.quantity + 1)
+                              }
                               className="qty-btn"
                             >
                               <Plus size={12} />
@@ -519,7 +508,14 @@ const NewBill = () => {
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-end',
+                          justifyContent: 'space-between',
+                        }}
+                      >
                         <div className="cart-item-total">
                           {formatCurrency(
                             item.rate * item.quantity - (item.discount || 0),
@@ -569,7 +565,8 @@ const NewBill = () => {
                     <div className="bill-summary-row">
                       <span className="bill-summary-row-label">Round Off</span>
                       <span className="bill-summary-row-value">
-                        {totals.roundOff > 0 ? '+' : ''}{totals.roundOff.toFixed(2)}
+                        {totals.roundOff > 0 ? '+' : ''}
+                        {totals.roundOff.toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -586,7 +583,10 @@ const NewBill = () => {
               {/* Payment Mode */}
               {cart.length > 0 && (
                 <div style={{ padding: 'var(--space-4) var(--space-5) 0' }}>
-                  <p className="customer-panel-title" style={{ marginBottom: 8 }}>
+                  <p
+                    className="customer-panel-title"
+                    style={{ marginBottom: 8 }}
+                  >
                     Payment Mode
                   </p>
                   <div className="payment-modes">
@@ -595,7 +595,9 @@ const NewBill = () => {
                         key={mode}
                         type="button"
                         onClick={() => setPaymentMode(mode)}
-                        className={`payment-mode${paymentMode === mode ? ' active' : ''}`}
+                        className={`payment-mode${
+                          paymentMode === mode ? ' active' : ''
+                        }`}
                       >
                         {mode}
                       </button>
@@ -612,7 +614,9 @@ const NewBill = () => {
                   disabled={saving || cart.length === 0}
                   className="btn btn-primary btn-lg w-full"
                 >
-                  {saving ? 'Generating...' : (
+                  {saving ? (
+                    'Generating...'
+                  ) : (
                     <>
                       <Check size={18} /> Generate & Print Bill
                     </>
