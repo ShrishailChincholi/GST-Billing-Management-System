@@ -316,3 +316,52 @@
     padding: var(--space-4);
   }
 }
+
+/* ===== Header Search ===== */
+.header-search {
+  position: relative;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .header-search {
+    display: block;
+  }
+}
+
+.header-search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-gray-400);
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
+}
+
+.header-search input {
+  padding: 8px 14px 8px 38px;
+  width: 280px;
+  max-width: 100%;
+  font-size: 13px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-lg);
+  background: var(--color-gray-50);
+  color: var(--color-gray-900);
+  transition: all var(--transition-fast);
+  outline: none;
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.header-search input:focus {
+  border-color: var(--color-primary-400);
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  width: 320px;
+}
+
+.header-search input::placeholder {
+  color: var(--color-gray-400);
+}
