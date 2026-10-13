@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
   };
 
-  // ===== Chart 1: Revenue Trend (last 7 days, computed from recentSales) =====
+
   // For a fuller chart, we'd call a dedicated endpoint; here we use what we have
   const revenueChartData = (() => {
     // Group last 7 days
@@ -130,7 +130,7 @@ const Dashboard = () => {
     };
   })();
 
-  // ===== Chart 2: GST Breakdown =====
+  
   const gstChartData = {
     labels: ['Cash Bills', 'GST Bills'],
     datasets: [

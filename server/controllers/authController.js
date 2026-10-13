@@ -127,11 +127,7 @@ const login = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
-// ============================================================
+
 const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
@@ -141,11 +137,7 @@ const getMe = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Update profile
-// @route   PUT /api/auth/me
-// @access  Private
-// ============================================================
+
 const updateProfile = async (req, res, next) => {
   try {
     const { name, businessName, gstin, address, phone, bankDetails, billFooterNote } = req.body;
