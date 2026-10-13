@@ -9,10 +9,11 @@ const CustomerForm = ({ customer, onChange, billType }) => {
         {isGST ? 'Customer Details (Required)' : 'Customer Details (Optional)'}
       </p>
 
-      <div className="invoice-form-row two-col">
-        <div className="form-group" style={{ marginBottom: 0 }}>
+      <div className="customer-form-grid">
+        <div className="customer-form-field">
           <label className="label">
-            Customer Name {isGST && <span style={{ color: 'var(--color-danger)' }}>*</span>}
+            Customer Name{' '}
+            {isGST && <span style={{ color: 'var(--color-danger)' }}>*</span>}
           </label>
           <input
             type="text"
@@ -23,7 +24,7 @@ const CustomerForm = ({ customer, onChange, billType }) => {
           />
         </div>
 
-        <div className="form-group" style={{ marginBottom: 0 }}>
+        <div className="customer-form-field">
           <label className="label">Phone</label>
           <input
             type="tel"
@@ -34,27 +35,24 @@ const CustomerForm = ({ customer, onChange, billType }) => {
             maxLength={10}
           />
         </div>
-      </div>
 
-      {isGST && (
-        <div
-          className="form-group"
-          style={{ marginTop: 'var(--space-4)', marginBottom: 0 }}
-        >
-          <label className="label">Customer GSTIN</label>
-          <input
-            type="text"
-            value={customer.gstin}
-            onChange={(e) =>
-              onChange({ ...customer, gstin: e.target.value.toUpperCase() })
-            }
-            className="input-field"
-            placeholder="29AABCT1332L1Z8"
-            maxLength={15}
-            style={{ fontFamily: 'var(--font-mono)' }}
-          />
-        </div>
-      )}
+        {isGST && (
+          <div className="customer-form-field full-width">
+            <label className="label">Customer GSTIN</label>
+            <input
+              type="text"
+              value={customer.gstin}
+              onChange={(e) =>
+                onChange({ ...customer, gstin: e.target.value.toUpperCase() })
+              }
+              className="input-field"
+              placeholder="29AABCT1332L1Z8"
+              maxLength={15}
+              style={{ fontFamily: 'var(--font-mono)' }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
