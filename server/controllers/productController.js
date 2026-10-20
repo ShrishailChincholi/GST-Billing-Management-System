@@ -51,11 +51,9 @@ const createProduct = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Private
-// ============================================================
+
+
+
 const getProducts = async (req, res, next) => {
   try {
     const { search, gstRate, page = 1, limit = 500 } = req.query;
@@ -92,11 +90,9 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get single product
-// @route   GET /api/products/:id
-// @access  Private
-// ============================================================
+
+
+
 const getProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -117,11 +113,8 @@ const getProduct = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private
-// ============================================================
+
+
 const updateProduct = async (req, res, next) => {
   try {
     let product = await Product.findOne({
@@ -161,11 +154,9 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Delete product
-// @route   DELETE /api/products/:id
-// @access  Private
-// ============================================================
+
+
+
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -191,11 +182,9 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Update stock
-// @route   PATCH /api/products/:id/stock
-// @access  Private
-// ============================================================
+
+
+
 const updateStock = async (req, res, next) => {
   try {
     const { quantity, operation } = req.body;

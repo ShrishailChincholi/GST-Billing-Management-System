@@ -6,9 +6,9 @@ const {
   isInterState,
 } = require('../utils/gstCalculator');
 
-// ============================================================
-// Helper: Generate unique bill number
-// ============================================================
+
+
+
 const generateBillNumber = async (billType) => {
   const now = new Date();
   const year = now.getFullYear();
@@ -27,11 +27,9 @@ const generateBillNumber = async (billType) => {
   return `${prefix}-${year}${month}-${String(count + 1).padStart(5, '0')}`;
 };
 
-// ============================================================
-// @desc    Create a new sale/bill
-// @route   POST /api/sales
-// @access  Private
-// ============================================================
+
+
+
 const createSale = async (req, res, next) => {
   try {
     const {
@@ -124,11 +122,8 @@ const createSale = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get all sales
-// @route   GET /api/sales
-// @access  Private
-// ============================================================
+
+
 const getSales = async (req, res, next) => {
   try {
     const { billType, from, to, search, page = 1, limit = 100 } = req.query;
@@ -169,11 +164,9 @@ const getSales = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get single sale
-// @route   GET /api/sales/:id
-// @access  Private
-// ============================================================
+
+
+
 const getSale = async (req, res, next) => {
   try {
     const sale = await Sale.findOne({
@@ -194,11 +187,9 @@ const getSale = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Delete sale (restores stock)
-// @route   DELETE /api/sales/:id
-// @access  Private
-// ============================================================
+
+
+
 const deleteSale = async (req, res, next) => {
   try {
     const sale = await Sale.findOne({
@@ -233,11 +224,8 @@ const deleteSale = async (req, res, next) => {
   }
 };
 
-// ============================================================
-// @desc    Get sales stats (for dashboard)
-// @route   GET /api/sales/stats
-// @access  Private
-// ============================================================
+
+
 const getSalesStats = async (req, res, next) => {
   try {
     const userId = req.user.id;

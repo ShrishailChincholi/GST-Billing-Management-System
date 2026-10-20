@@ -470,9 +470,9 @@ const getTaxLiability = async (req, res, next) => {
   }
 };
 
-// @desc    Get Client-wise Sales Report
-// @route   GET /api/reports/client-wise
-// @access  Private
+
+
+
 const getClientWiseSales = async (req, res, next) => {
   try {
     const { period = 'year', from, to } = req.query;
@@ -540,9 +540,9 @@ const getClientWiseSales = async (req, res, next) => {
   }
 };
 
-// @desc    Get Dashboard Stats
-// @route   GET /api/reports/dashboard-stats
-// @access  Private
+
+
+
 const getDashboardStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
