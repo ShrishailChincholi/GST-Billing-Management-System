@@ -1,16 +1,15 @@
 const Product = require('../models/Product');
 
-
 const createProduct = async (req, res, next) => {
   try {
     const {
       name,
       description,
       hsnCode,
+      barcode,
       unit,
       rate,
       gstRate,
-      cessRate,
       stock,
     } = req.body;
 
@@ -33,10 +32,10 @@ const createProduct = async (req, res, next) => {
       name,
       description: description || '',
       hsnCode,
+      barcode: barcode || undefined,
       unit: unit || 'PCS',
       rate,
       gstRate,
-      cessRate: cessRate || 0,
       stock: stock || 0,
       createdBy: req.user.id,
     });
@@ -50,9 +49,6 @@ const createProduct = async (req, res, next) => {
     next(error);
   }
 };
-
-
-
 
 const getProducts = async (req, res, next) => {
   try {
@@ -68,7 +64,7 @@ const getProducts = async (req, res, next) => {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { hsnCode: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { barcode: { $regex: search, $options: 'i' } }, // Added barcode search
       ];
     }
 
@@ -90,9 +86,6 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-
-
-
 const getProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -112,8 +105,6 @@ const getProduct = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 const updateProduct = async (req, res, next) => {
   try {
@@ -154,9 +145,6 @@ const updateProduct = async (req, res, next) => {
   }
 };
 
-
-
-
 const deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findOne({
@@ -181,9 +169,6 @@ const deleteProduct = async (req, res, next) => {
     next(error);
   }
 };
-
-
-
 
 const updateStock = async (req, res, next) => {
   try {

@@ -17,6 +17,12 @@ const productSchema = new mongoose.Schema(
       required: [true, 'HSN/SAC code is required'],
       trim: true,
     },
+    barcode: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows multiple products to not have a barcode
+      trim: true,
+    },
     unit: {
       type: String,
       default: 'PCS',
@@ -50,6 +56,6 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.index({ name: 'text', hsnCode: 'text' });
+productSchema.index({ name: 'text', hsnCode: 'text', barcode: 'text' });
 
 module.exports = mongoose.model('Product', productSchema);
